@@ -1,4 +1,38 @@
 package com.csp3341.grocery;
 
-public class Perishable {
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
+public class Perishable extends Product {
+    private LocalDate expiryDate;
+
+    public Perishable(int id, String name, double price, int quantity, Category category, String expiryDate) {
+        super(id, name, price, quantity, category);
+        setExpiryDate(expiryDate);
+    }
+
+    public LocalDate getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(String expiryDate) {
+        try {
+            this.expiryDate = LocalDate.parse(expiryDate, DateTimeFormatter.ISO_DATE);
+        }
+        catch (DateTimeParseException e) {
+            System.out.println("Invalid Date Format! Use the format YYYY-MM-DD");
+            this.expiryDate = LocalDate.now();
+        }
+    }
+
+    @Override
+    public boolean isExpired() {
+        return expiryDate.isBefore(LocalDate.now());
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " | Expiry: " + expiryDate;
+    }
 }
