@@ -39,51 +39,66 @@ public class Main {
 
     // Manage Products
     private static void manageProducts() {
-        System.out.println("""
-                \n\nMANAGE PRODUCTS:
-                1. View All Products
-                2. View Expired Products
-                3. View Low Stock Products
-                4. View Products by Category
-                5. Add Products
-                6. Update Product Stock
-                7. Remove Product
-                8. Return to Main Menu
-                """);
+        boolean running = true;
 
-        int choice = readInt("Enter choice: ");
+        while (running) {
+            System.out.println("""
+            \nMANAGE PRODUCTS:
+            1. View All Products
+            2. View Expired Products
+            3. View Low Stock Products
+            4. View Products by Category
+            5. Add Products
+            6. Update Product Stock
+            7. Remove Product
+            8. Return to Main Menu
+            """);
 
-        switch (choice) {
-            case 1 -> manager.listAllProducts();
-            case 2 -> manager.listExpiredProducts();
-            case 3 -> manager.listLowStockProducts();
-            case 4 -> filterByCategory();
-            case 5 -> addProduct();
-            case 6 -> updateProductStock();
-            case 7 -> removeProduct();
-            case 8 -> goBack("Main Menu");
-            default -> System.out.println("Error! Invalid Option!");
+            int choice = readInt("Enter choice:");
+
+            switch (choice) {
+                case 1 -> manager.listAllProducts();
+                case 2 -> manager.listExpiredProducts();
+                case 3 -> manager.listLowStockProducts();
+                case 4 -> filterByCategory();
+                case 5 -> addProduct();
+                case 6 -> updateProductStock();
+                case 7 -> removeProduct();
+                case 8 -> {
+                    goBack("Main Menu");
+                    running = false;
+                }
+                default -> System.out.println("Error! Invalid Option!");
+            }
         }
     }
 
     // Add Product
     private static void addProduct() {
-        System.out.println("""
-                    \nSELECT PRODUCT TYPE:
-                    1. Perishable Products
-                    2. Non-Perishable Products
-                    3. Return to Previous Menu
-                """);
+        boolean running = true;
 
-        int choice = readInt("Enter choice: ");
+        while (running) {
+            System.out.println("""
+            \nSELECT PRODUCT TYPE:
+            1. Perishable Products
+            2. Non-Perishable Products
+            3. Return to Previous Menu
+            """);
 
-        switch (choice) {
-            case 1 -> addPerishableProduct();
-            case 2 -> addNonPerishableProduct();
-            case 3 -> goBack("Product Menu");
-            default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+            int choice = readInt("Enter choice:");
+
+            switch (choice) {
+                case 1 -> addPerishableProduct();
+                case 2 -> addNonPerishableProduct();
+                case 3 -> {
+                    goBack("Product Menu");
+                    running = false;
+                }
+                default -> System.out.println("Error! Invalid Option!");
+            }
         }
     }
+
 
     // Add Perishable Products
     private static void addPerishableProduct() {
@@ -156,20 +171,27 @@ public class Main {
 
     // Manage Suppliers
     private static void manageSuppliers() {
-        System.out.println("""
-                    \n\nMANAGE SUPPLIERS:
-                    1. Add Suppliers
-                    2. List Suppliers
-                    3. Return to Previous Menu
-                """);
+        boolean running = true;
 
-        int choice = readInt("Enter choice: ");
+        while (running) {
+            System.out.println("""
+                        \n\nMANAGE SUPPLIERS:
+                        1. Add Suppliers
+                        2. List Suppliers
+                        3. Return to Previous Menu
+                    """);
 
-        switch (choice) {
-            case 1 -> addSupplier();
-            case 2 -> manager.listAllSuppliers();
-            case 3 -> goBack("Supplier Menu");
-            default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+            int choice = readInt("Enter choice: ");
+
+            switch (choice) {
+                case 1 -> addSupplier();
+                case 2 -> manager.listAllSuppliers();
+                case 3 -> {
+                    goBack("Main Menu");
+                    running = false;
+                }
+                default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+            }
         }
     }
 
@@ -196,41 +218,48 @@ public class Main {
 
     // Inventory Reports
     private static void inventoryReports() {
-        System.out.println("""
-                    \n\nINVENTORY REPORTS:
-                    1. Generate Low Stock Reports
-                    2. Generate Expired Products Reports
-                    3. Generate Category Reports
-                    4. Generate Complete Inventory Reports
-                    5. Return to Previous Menu
-                """);
+        boolean running = true;
 
-        int choice = readInt("Enter choice: ");
+        while (running) {
+            System.out.println("""
+                        \n\nINVENTORY REPORTS:
+                        1. Generate Low Stock Reports
+                        2. Generate Expired Products Reports
+                        3. Generate Category Reports
+                        4. Generate Complete Inventory Reports
+                        5. Return to Previous Menu
+                    """);
 
-        switch (choice) {
-            case 1 -> manager.listLowStockProducts();
-            case 2 -> manager.listExpiredProducts();
-            case 3 -> filterByCategory();
-            case 4 -> manager.listAllProducts();
-            case 5 -> goBack("Inventory Menu");
-            default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+            int choice = readInt("Enter choice: ");
+
+            switch (choice) {
+                case 1 -> manager.listLowStockProducts();
+                case 2 -> manager.listExpiredProducts();
+                case 3 -> filterByCategory();
+                case 4 -> manager.listAllProducts();
+                case 5 -> {
+                    goBack("Main Menu");
+                    running = false;
+                }
+                default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+            }
         }
     }
 
     // Input Helpers
     private static int readInt(String msg) {
-        System.out.println(msg);
+        System.out.print(msg + " ");
         return scanner.nextInt();
     }
 
     private static double readDouble(String msg) {
-        System.out.println(msg);
+        System.out.print(msg + " ");
         return scanner.nextDouble();
     }
 
     private static String readString(String msg) {
         scanner.nextLine();
-        System.out.println(msg);
+        System.out.print(msg + " ");
         return scanner.nextLine();
     }
 
