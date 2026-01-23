@@ -2,10 +2,9 @@ package com.csp3341.grocery;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class InventoryManager {
-    private List<Product> products;
+    private final List<Product> products;
 
     public InventoryManager() {
         products = new ArrayList<>();
@@ -43,6 +42,10 @@ public class InventoryManager {
     public void listLowStockProducts() {
         System.out.println("LOW STOCK PRODUCT LIST:");
         products.stream().filter(Product::isLowStock).forEach(System.out::println);
+    }
+
+    public void listProductsByCategory(Category category) {
+        // TODO: Implement
     }
 
     public void generateInventoryReport() {
