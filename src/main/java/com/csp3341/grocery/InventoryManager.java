@@ -5,11 +5,24 @@ import java.util.List;
 
 public class InventoryManager {
     private final List<Product> products;
+    private final List<Supplier> suppliers;
 
     public InventoryManager() {
         products = new ArrayList<>();
+        suppliers = new ArrayList<>();
     }
 
+    // Supplier Management
+    public void addSupplier(Supplier supplier) {
+        suppliers.add(supplier);
+    }
+
+    public Supplier findSupplier(int supplierId) {
+        return suppliers.stream().filter(s -> s. getSupplierId() == supplierId)
+                .findFirst().orElse(null);
+    }
+
+    // Product Management
     public void addProduct(Product product) {
         products.add(product);
     }
@@ -19,7 +32,8 @@ public class InventoryManager {
     }
 
     public Product findProduct(int productId) {
-        return products.stream().filter(p -> p.getId() == productId).findFirst().orElse(null);
+        return products.stream().filter(p -> p.getId() == productId)
+                .findFirst().orElse(null);
     }
 
     public void updateStock(int productId, int quantity) {
@@ -29,6 +43,7 @@ public class InventoryManager {
         }
     }
 
+    // Listing and Reporting
     public void listAllProducts() {
         System.out.println("PRODUCT LIST: ");
         products.forEach(System.out::println);
@@ -45,7 +60,14 @@ public class InventoryManager {
     }
 
     public void listProductsByCategory(Category category) {
-        // TODO: Implement
+        System.out.println("PRODUCTS IN CATEGORY:" + category);
+        products.stream().filter(p -> p.getCategory() == category)
+                .forEach(System.out::println);
+    }
+
+    public void listAllSuppliers() {
+        System.out.println("SUPPLIER LIST: ");
+        suppliers.forEach(System.out::println);
     }
 
     public void generateInventoryReport() {

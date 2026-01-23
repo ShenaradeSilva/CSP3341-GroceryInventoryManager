@@ -3,8 +3,8 @@ package com.csp3341.grocery;
 public class NonPerishable extends Product {
     private String shelfLife;
 
-    public NonPerishable(int id, String name, double price, int quantity, Category category, String shelfLife) {
-        super(id, name, price, quantity, category);
+    public NonPerishable(int id, String name, double price, int quantity, Category category, Supplier supplier, String shelfLife) {
+        super(id, name, price, quantity, category, supplier);
         this.shelfLife = shelfLife;
     }
 
@@ -16,6 +16,10 @@ public class NonPerishable extends Product {
         this.shelfLife = shelfLife;
     }
 
+    public boolean hasShelfLife() {
+        return shelfLife != null && !shelfLife.isEmpty();
+    }
+
     @Override
     public boolean isExpired() {
         return false;
@@ -23,6 +27,7 @@ public class NonPerishable extends Product {
 
     @Override
     public String toString() {
-        return super.toString() + " | Shelf Life: " + shelfLife;
+        String shelfInfo = hasShelfLife() ? " ! Shelf Life: " + shelfLife: "";
+        return super.toString() + shelfInfo;
     }
 }

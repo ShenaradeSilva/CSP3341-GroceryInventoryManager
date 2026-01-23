@@ -1,7 +1,7 @@
 package com.csp3341.grocery;
 
 public class Supplier {
-    private int supplierId;
+    private final int supplierId;
     private String supplierName;
     private String contact;
 
@@ -23,6 +23,10 @@ public class Supplier {
         return contact;
     }
 
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
+    }
+
     public void setContact(String contact) {
         this.contact = contact;
     }
@@ -30,5 +34,24 @@ public class Supplier {
     @Override
     public String toString() {
         return supplierId + " | " + supplierName + " | " + contact;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+
+        Supplier other = (Supplier) obj;
+        return supplierId == other.supplierId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(supplierId);
     }
 }

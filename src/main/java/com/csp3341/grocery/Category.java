@@ -10,6 +10,7 @@ public enum Category {
 
     @Override
     public String toString() {
-        return name();
+        String s = name().replace("_", " ").toLowerCase();
+        return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
 }

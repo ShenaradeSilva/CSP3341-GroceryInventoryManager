@@ -7,8 +7,8 @@ import java.time.format.DateTimeParseException;
 public class Perishable extends Product {
     private LocalDate expiryDate;
 
-    public Perishable(int id, String name, double price, int quantity, Category category, String expiryDate) {
-        super(id, name, price, quantity, category);
+    public Perishable(int id, String name, double price, int quantity, Category category, Supplier supplier, String expiryDate) {
+        super(id, name, price, quantity, category, supplier);
         setExpiryDate(expiryDate);
     }
 
@@ -28,6 +28,9 @@ public class Perishable extends Product {
 
     @Override
     public boolean isExpired() {
+        if (expiryDate == null) {
+            return false;
+        }
         return expiryDate.isBefore(LocalDate.now());
     }
 

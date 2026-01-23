@@ -6,13 +6,16 @@ public abstract class Product {
     protected double price;
     protected int quantity;
     protected Category category;
+    protected Supplier supplier;
+    protected int lowStockThreshold = 5;
 
-    public Product(int id, String name, double price, int quantity, Category category) {
+    public Product(int id, String name, double price, int quantity, Category category, Supplier supplier) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.quantity = quantity;
         this.category = category;
+        this.supplier = supplier;
     }
 
     public int getId() {
@@ -31,6 +34,14 @@ public abstract class Product {
         return quantity;
     }
 
+    public Category getCategory() {
+        return category;
+    }
+
+    public Supplier getSupplier() {
+        return supplier;
+    }
+
     public void setPrice(double price) {
         this.price = price;
     }
@@ -40,13 +51,24 @@ public abstract class Product {
     }
 
     public boolean isLowStock() {
-        return quantity < 5;
+        return quantity <= lowStockThreshold;
     }
 
     public abstract boolean isExpired();
 
     @Override
     public String toString() {
-        return id + " | " + name + " | LKR " + price + " | " + quantity + " | " + category;
+        String status = "";
+
+        if (isLowStock()) {
+            status += " [LOW STOCK]";
+        }
+
+        if (isExpired()) {
+            status += " [EXPIRED]";
+        }
+
+        return id + " | " + name + " | LKR " + price + " | Qty: " + quantity + " | " +
+                category + " | Supplier: " + supplier.getSupplierName() + status;
     }
 }
