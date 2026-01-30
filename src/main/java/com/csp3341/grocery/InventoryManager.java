@@ -18,7 +18,7 @@ public class InventoryManager {
     }
 
     public Supplier findSupplier(int supplierId) {
-        return suppliers.stream().filter(s -> s. getSupplierId() == supplierId)
+        return suppliers.stream().filter(s -> s.getSupplierId() == supplierId)
                 .findFirst().orElse(null);
     }
 
@@ -46,28 +46,59 @@ public class InventoryManager {
     // Listing and Reporting
     public void listAllProducts() {
         System.out.println("PRODUCT LIST: ");
-        products.forEach(System.out::println);
+        if (products.isEmpty()) {
+            System.out.println("No Products Found!");
+        }
+        else {
+            products.forEach(System.out::println);
+        }
     }
 
     public void listExpiredProducts() {
         System.out.println("EXPIRED PRODUCT LIST: ");
-        products.stream().filter(Product::isExpired).forEach(System.out::println);
+        List<Product> expiredProduct = products.stream().filter(Product::isExpired).toList();
+
+        if (expiredProduct.isEmpty()) {
+            System.out.println("No Expired Products Found!");
+        }
+        else {
+            expiredProduct.forEach(System.out::println);
+        }
     }
 
     public void listLowStockProducts() {
         System.out.println("LOW STOCK PRODUCT LIST:");
-        products.stream().filter(Product::isLowStock).forEach(System.out::println);
+        List<Product> lowStockProducts = products.stream().filter(Product::isLowStock).toList();
+
+        if (lowStockProducts.isEmpty()) {
+            System.out.println("No Low Stock Products Found!");
+        }
+        else {
+            lowStockProducts.forEach(System.out::println);
+        }
     }
 
     public void listProductsByCategory(Category category) {
         System.out.println("PRODUCTS IN CATEGORY:" + category);
-        products.stream().filter(p -> p.getCategory() == category)
-                .forEach(System.out::println);
+        List<Product> categoryProducts = products.stream().filter(p -> p.getCategory() == category)
+                .toList();
+
+        if (categoryProducts.isEmpty()) {
+            System.out.println("No Products Found in Category!");
+        }
+        else {
+            categoryProducts.forEach(System.out::println);
+        }
     }
 
     public void listAllSuppliers() {
         System.out.println("SUPPLIER LIST: ");
-        suppliers.forEach(System.out::println);
+        if (suppliers.isEmpty()) {
+            System.out.println("No Suppliers Found!");
+        }
+        else {
+            suppliers.forEach(System.out::println);
+        }
     }
 
     public void generateInventoryReport() {
