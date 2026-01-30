@@ -248,13 +248,27 @@ public class Main {
 
     // Input Helpers
     private static int readInt(String msg) {
-        System.out.print(msg + " ");
-        return scanner.nextInt();
+        while (true) {
+            try {
+                System.out.print(msg + " ");
+                int value = Integer.parseInt(scanner.nextLine().trim());
+                return value;
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid integer.");
+            }
+        }
     }
 
     private static double readDouble(String msg) {
-        System.out.print(msg + " ");
-        return scanner.nextDouble();
+        while (true) {
+            try {
+                System.out.print(msg + " ");
+                double value = Double.parseDouble(scanner.nextLine().trim());
+                return value;
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number.");
+            }
+        }
     }
 
     private static String readString(String msg) {
@@ -264,14 +278,20 @@ public class Main {
     }
 
     private static Category readCategory() {
+        Category[] categories = Category.values();
         System.out.println("Available Categories: ");
-
-        for (Category c: Category.values()) {
-            System.out.println("- " + c);
+        for (int i = 0; i < categories.length; i++) {
+            System.out.println((i + 1) + ". " + categories[i]);
         }
 
-        System.out.println("Select Category: ");
-        return Category.valueOf(scanner.nextLine().toUpperCase());
+        while (true) {
+            int choice = readInt("Select Category (1-" + categories.length + "): ");
+            if (choice >= 1 && choice <= categories.length) {
+                return categories[choice - 1];
+            } else {
+                System.out.println("Invalid choice. Please select a number between 1 and " + categories.length + ".");
+            }
+        }
     }
 
     // Exit Helper
