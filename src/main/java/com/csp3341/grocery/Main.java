@@ -272,7 +272,6 @@ public class Main {
     }
 
     private static String readString(String msg) {
-        scanner.nextLine();
         System.out.print(msg + " ");
         return scanner.nextLine();
     }
