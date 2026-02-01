@@ -103,8 +103,9 @@ public class Main {
     // Add Perishable Products
     private static void addPerishableProduct() {
         System.out.println("\nADD PERISHABLE PRODUCT: ");
+        int nextID = manager.getNextProductId();
+        System.out.println("Product will be assigned to ID: " + nextID);
 
-        int id = readInt("Product ID: ");
         String name = readString("Product Name: ");
         double price = readDouble("Price (LKR): ");
         int quantity = readInt("Quantity: ");
@@ -112,13 +113,14 @@ public class Main {
 
         Supplier supplier = selectSupplier();
         if (supplier == null) {
+            System.out.println("Product Addition Cancelled");
             return;
         }
 
         String expiryDate = readString("Expiry Date (YYYY-MM-DD): ");
 
         manager.addProduct(
-                new Perishable(id, name, price, quantity, category, supplier, expiryDate)
+                new Perishable(nextID, name, price, quantity, category, supplier, expiryDate)
         );
 
         System.out.println("Perishable Product Added Successfully!");
@@ -127,8 +129,9 @@ public class Main {
     // Add Non-Perishable Products
     private static void addNonPerishableProduct() {
         System.out.println("\nADD NON-PERISHABLE PRODUCT: ");
+        int nextId = manager.getNextProductId();
+        System.out.println("Product will be assigned to ID: " + nextId);
 
-        int id = readInt("Product ID: ");
         String name = readString("Product Name: ");
         double price = readDouble("Price: LKR ");
         int quantity = readInt("Quantity: ");
@@ -136,13 +139,14 @@ public class Main {
 
         Supplier supplier = selectSupplier();
         if (supplier == null) {
+            System.out.println("Product Addition Cancelled");
             return;
         }
 
         String shelfLife = readString("Shelf Life: ");
 
         manager.addProduct(
-                new NonPerishable(id, name, price, quantity, category, supplier, shelfLife)
+                new NonPerishable(nextId, name, price, quantity, category, supplier, shelfLife)
         );
 
         System.out.println("Non-Perishable Product Added Successfully!");
@@ -150,17 +154,40 @@ public class Main {
 
     // Update Product Stock
     private static void updateProductStock() {
-        int id = readInt("Enter Product ID: ");
-        int quantity = readInt("Enter New Quantity: ");
-        manager.updateStock(id, quantity);
-        System.out.println("Stock Updated Successfully!");
+        System.out.println("\nUPDATE PRODUCT STOCK: ");
+        manager.listAllProducts();
+
+        if (!manager.hasProducts()) {
+            System.out.println("No Products Available to Update!");
+            return;
+        }
+
+        int id = readInt("Enter Product ID to Update: ");
+        Product product = manager.findProduct(id);
+
+        if (product == null) {
+            System.out.println("Product with ID " + id + " Not Found!");
+        }
+        else  {
+            System.out.println("Current Stock for '" + product.getName() + "' : " + product.getQuantity());
+            int quantity = readInt("Enter New Quantity: ");
+            manager.updateStock(id, quantity);
+            System.out.println("Stock Updated Successfully!");
+        }
     }
 
     // Remove Product
     private static void removeProduct() {
+        System.out.println("\nREMOVE PRODUCT: ");
+        manager.listAllProducts();
+
+        if (!manager.hasProducts()) {
+            System.out.println("No Products Available to Remove!");
+            return;
+        }
+
         int id = readInt("Enter the Product ID to be removed: ");
         manager.removeProduct(id);
-        System.out.println("Product Removed Successfully!");
     }
 
     // Filter Products by Category
@@ -178,7 +205,8 @@ public class Main {
                         \n\nMANAGE SUPPLIERS:
                         1. Add Suppliers
                         2. List Suppliers
-                        3. Return to Previous Menu
+                        3. Remove Supplier
+                        4. Return to Previous Menu
                     """);
 
             int choice = readInt("Enter choice: ");
@@ -186,7 +214,8 @@ public class Main {
             switch (choice) {
                 case 1 -> addSupplier();
                 case 2 -> manager.listAllSuppliers();
-                case 3 -> {
+                case 3 -> removeSupplier();
+                case 4 -> {
                     goBack("Main Menu");
                     running = false;
                 }
@@ -197,23 +226,80 @@ public class Main {
 
     // Add Suppliers
     private static void addSupplier() {
-        int id = readInt("Supplier ID: ");
+        System.out.println("\nADD SUPPLIER: ");
+        System.out.println("Supplier will be assigned ID: " + manager.getNextSupplierId());
+
         String name = readString("Supplier Name: ");
         String contact = readString("Contact Info: ");
 
-        manager.addSupplier(new Supplier(id, name, contact));
-        System.out.println("Supplier Added Successfully!");
+        manager.addSupplier(name, contact);
     }
 
     // Select Suppliers
     private static Supplier selectSupplier() {
+        System.out.println("\nAVAILABLE SUPPLIERS: ");
         manager.listAllSuppliers();
-        int supplierId = readInt("Enter Supplier ID for this product: ");
+
+        if (!manager.hasSuppliers()) {
+            System.out.println("\nNo Suppliers Available!");
+            System.out.println("\nYou need to Add a Supplier first.");
+
+            int choice = readInt("\n1. Add new supplier" +
+                    "\n2. Cancel product addition" +
+                    "\nEnter choice: ");
+            if (choice == 1) {
+                addSupplier();
+                return selectSupplier(); // Retry after adding
+            }
+            else {
+                return null;
+            }
+        }
+
+        int supplierId = readInt("\nEnter Supplier ID for this product: ");
         Supplier supplier = manager.findSupplier(supplierId);
+
         if (supplier == null) {
-            System.out.println("Supplier not found! Please add supplier first.");
+            System.out.println("Supplier not found!");
+            System.out.println("Do you want to:");
+            System.out.println("1. Try another supplier ID");
+            System.out.println("2. Add a new supplier");
+            System.out.println("3. Cancel product addition");
+
+            int choice = readInt("Enter choice: ");
+            switch (choice) {
+                case 1 -> {
+                    return selectSupplier();
+                }
+                case 2 -> {
+                    addSupplier();
+                    return selectSupplier();
+                }
+                case 3 -> {
+                    System.out.println("Product addition cancelled.");
+                    return null;
+                }
+                default -> {
+                    System.out.println("Invalid choice. Cancelling product addition.");
+                    return null;
+                }
+            }
         }
         return supplier;
+    }
+
+    // Remove Suppliers
+    private  static void removeSupplier() {
+        System.out.println("\nREMOVE SUPPLIER: ");
+        manager.listAllSuppliers();
+
+        if (!manager.hasSuppliers()) {
+            System.out.println("No Suppliers Available to Remove!");
+            return;
+        }
+
+        int id = readInt("\nEnter the Supplier ID to be Removed: ");
+        manager.removeSupplier(id);
     }
 
     // Inventory Reports
