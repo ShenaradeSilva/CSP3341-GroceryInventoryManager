@@ -18,11 +18,15 @@ public class Perishable extends Product {
 
     public void setExpiryDate(String expiryDate) {
         try {
-            this.expiryDate = LocalDate.parse(expiryDate, DateTimeFormatter.ISO_DATE);
+            LocalDate parsedDate = LocalDate.parse(expiryDate, DateTimeFormatter.ISO_DATE);
+            if (parsedDate.isBefore(LocalDate.now())) {
+                System.out.println("Warning! Expiry Date is in the past! Product may be Expired.");
+            }
+            this.expiryDate = parsedDate;
         }
         catch (DateTimeParseException e) {
-            System.out.println("Invalid Date Format! Use the format YYYY-MM-DD");
-            this.expiryDate = LocalDate.now();
+            System.out.println("Error! Invalid Date Format! Use the format YYYY-MM-DD");
+            throw new IllegalArgumentException("Invalid date format: " + expiryDate);
         }
     }
 
@@ -36,6 +40,12 @@ public class Perishable extends Product {
 
     @Override
     public String toString() {
-        return super.toString() + " | Expiry: " + expiryDate;
+        String expiryStatus = "";
+        if (isExpired()) {
+            expiryStatus = " [Expired " + expiryDate + "]";
+        } else {
+            expiryStatus = " | Expiry: " + expiryDate;
+        }
+        return super.toString() + expiryStatus;
     }
 }

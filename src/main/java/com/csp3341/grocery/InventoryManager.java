@@ -2,6 +2,11 @@ package com.csp3341.grocery;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.PrintWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class InventoryManager {
     private final List<Product> products;
@@ -266,10 +271,200 @@ public class InventoryManager {
         }
     }
 
-    public void generateInventoryReport() {
-        System.out.println("INVENTORY REPORT: ");
+    public void generateCompleteReport() {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("COMPLETE INVENTORY REPORT");
+        System.out.println("=".repeat(80));
+
+        System.out.println("\nALL PRODUCTS:");
+        System.out.println("-".repeat(80));
         listAllProducts();
+
+        System.out.println("\nEXPIRED PRODUCTS:");
+        System.out.println("-".repeat(80));
         listExpiredProducts();
+
+        System.out.println("\nLOW STOCK PRODUCTS:");
+        System.out.println("-".repeat(80));
         listLowStockProducts();
+
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("REPORT COMPLETE");
+        System.out.println("=".repeat(80));
+    }
+
+    public void saveLowStockReportToFile(String filename) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+            String separator = createSeparator('=', 60);
+            String subSeparator = createSeparator('-', 60);
+
+            writer.println(separator);
+            writer.println("LOW STOCK PRODUCTS REPORT");
+            writer.println("Generated: " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            writer.println(separator);
+            writer.println();
+
+            List<Product> lowStockProducts = products.stream()
+                    .filter(Product::isLowStock)
+                    .toList();
+
+            writer.println("LOW STOCK PRODUCTS (" + lowStockProducts.size() + "):");
+            writer.println(subSeparator);
+
+            if (lowStockProducts.isEmpty()) {
+                writer.println("No Low Stock Products Found!");
+            } else {
+                for (Product p : lowStockProducts) {
+                    writer.println(p.toString());
+                }
+            }
+
+            System.out.println("Low stock report saved to: " + filename);
+        } catch (IOException e) {
+            System.out.println("Error saving to file: " + e.getMessage());
+        }
+    }
+
+    public void saveExpiredProductsReportToFile(String filename) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+            String separator = createSeparator('=', 60);
+            String subSeparator = createSeparator('-', 60);
+
+            writer.println(separator);
+            writer.println("EXPIRED PRODUCTS REPORT");
+            writer.println("Generated: " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            writer.println(separator);
+            writer.println();
+
+            List<Product> expiredProducts = products.stream()
+                    .filter(Product::isExpired)
+                    .toList();
+
+            writer.println("EXPIRED PRODUCTS (" + expiredProducts.size() + "):");
+            writer.println(subSeparator);
+
+            if (expiredProducts.isEmpty()) {
+                writer.println("No Expired Products Found!");
+            } else {
+                for (Product p : expiredProducts) {
+                    writer.println(p.toString());
+                }
+            }
+
+            System.out.println("Expired products report saved to: " + filename);
+        } catch (IOException e) {
+            System.out.println("Error saving to file: " + e.getMessage());
+        }
+    }
+
+    public void saveCategoryReportToFile(String filename, Category category) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+            String separator = createSeparator('=', 60);
+            String subSeparator = createSeparator('-', 60);
+
+            writer.println(separator);
+            writer.println("CATEGORY REPORT: " + category);
+            writer.println("Generated: " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            writer.println(separator);
+            writer.println();
+
+            List<Product> categoryProducts = products.stream()
+                    .filter(p -> p.getCategory() == category)
+                    .toList();
+
+            writer.println("PRODUCTS IN CATEGORY: " + category + " (" + categoryProducts.size() + ")");
+            writer.println(subSeparator);
+
+            if (categoryProducts.isEmpty()) {
+                writer.println("No Products Found in Category!");
+            } else {
+                for (Product p : categoryProducts) {
+                    writer.println(p.toString());
+                }
+            }
+
+            System.out.println("Category report saved to: " + filename);
+        } catch (IOException e) {
+            System.out.println("Error saving to file: " + e.getMessage());
+        }
+    }
+
+    public void saveReportToFile(String filename, boolean includeSupplierDetails) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+            String separator = createSeparator('=', 60);
+            String subSeparator = createSeparator('-', 60);
+
+            writer.println(separator);
+            writer.println("INVENTORY REPORT");
+            writer.println("Generated: " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            writer.println(separator);
+            writer.println();
+
+            if (includeSupplierDetails) {
+                writer.println("SUPPLIER DETAILS:");
+                writer.println(subSeparator);
+                if (suppliers.isEmpty()) {
+                    writer.println("No Suppliers Found!");
+                } else {
+                    for (Supplier s : suppliers) {
+                        writer.println(s.toString());
+                    }
+                }
+                writer.println();
+            }
+
+            writer.println("PRODUCT LIST:");
+            writer.println(subSeparator);
+            if (products.isEmpty()) {
+                writer.println("No Products Found!");
+            } else {
+                for (Product p : products) {
+                    writer.println(p.toString());
+                }
+            }
+
+            writer.println("\n" + separator);
+            writer.println("REPORT END");
+            writer.println("Total Products: " + getProductCount());
+            writer.println("Total Suppliers: " + getSupplierCount());
+
+            System.out.println("Report saved to file: " + filename);
+        } catch (IOException e) {
+            System.out.println("Error saving to file: " + e.getMessage());
+        }
+    }
+
+    private String createSeparator(char c, int length) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    public void saveConsoleReport(boolean includeSupplierDetails) {
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("CONSOLE INVENTORY REPORT");
+        System.out.println("=".repeat(80));
+
+        if (includeSupplierDetails) {
+            System.out.println("\nSUPPLIER DETAILS:");
+            System.out.println("-".repeat(80));
+            listAllSuppliers();
+        }
+
+        System.out.println("\nPRODUCT LIST:");
+        System.out.println("-".repeat(80));
+        listAllProducts();
+
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("REPORT END");
+        System.out.println("Total Products: " + getProductCount());
+        System.out.println("Total Suppliers: " + getSupplierCount());
+        System.out.println("=".repeat(80));
     }
 }

@@ -143,7 +143,7 @@ public class Main {
             return;
         }
 
-        String shelfLife = readString("Shelf Life: ");
+        String shelfLife = readString("Shelf Life (Years): ");
 
         manager.addProduct(
                 new NonPerishable(nextId, name, price, quantity, category, supplier, shelfLife)
@@ -319,15 +319,136 @@ public class Main {
             int choice = readInt("Enter choice: ");
 
             switch (choice) {
-                case 1 -> manager.listLowStockProducts();
-                case 2 -> manager.listExpiredProducts();
-                case 3 -> filterByCategory();
-                case 4 -> manager.listAllProducts();
+                case 1 -> generateLowStockReport();
+                case 2 -> generateExpiredProductsReport();
+                case 3 -> generateCategoryReport();
+                case 4 -> generateCompleteInventoryReport();
                 case 5 -> {
                     goBack("Main Menu");
                     running = false;
                 }
                 default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+            }
+        }
+    }
+
+    private static void generateLowStockReport() {
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("LOW STOCK REPORT");
+        System.out.println("=".repeat(60));
+        manager.listLowStockProducts();
+        System.out.println("=".repeat(60));
+
+        askToSaveReport("low_stock_report.txt", ReportType.LOW_STOCK);
+    }
+
+    private static void generateExpiredProductsReport() {
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("EXPIRED PRODUCTS REPORT");
+        System.out.println("=".repeat(60));
+        manager.listExpiredProducts();
+        System.out.println("=".repeat(60));
+
+        askToSaveReport("expired_products_report.txt", ReportType.EXPIRED_PRODUCTS);
+    }
+
+    private static void generateCategoryReport() {
+        Category category = readCategory();
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("CATEGORY REPORT: " + category);
+        System.out.println("=".repeat(60));
+        manager.listProductsByCategory(category);
+        System.out.println("=".repeat(60));
+
+        askToSaveReport("category_report_" + category.name().toLowerCase() + ".txt",
+                ReportType.CATEGORY, category);
+    }
+
+    private static void generateCompleteInventoryReport() {
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("COMPLETE INVENTORY REPORT");
+        System.out.println("=".repeat(60));
+
+        System.out.println("\nALL PRODUCTS:");
+        System.out.println("-".repeat(60));
+        manager.listAllProducts();
+
+        System.out.println("\nEXPIRED PRODUCTS:");
+        System.out.println("-".repeat(60));
+        manager.listExpiredProducts();
+
+        System.out.println("\nLOW STOCK PRODUCTS:");
+        System.out.println("-".repeat(60));
+        manager.listLowStockProducts();
+
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("REPORT COMPLETE");
+        System.out.println("=".repeat(60));
+
+        askToSaveReport("complete_inventory_report.txt", ReportType.COMPLETE_INVENTORY);
+    }
+
+    private static void askToSaveReport(String defaultFilename, ReportType reportType) {
+        askToSaveReport(defaultFilename, reportType, null);
+    }
+
+    private static void askToSaveReport(String defaultFilename, ReportType reportType, Category category) {
+        System.out.println("\nWould you like to save this report to a file?");
+        boolean saveToFile = askYesNo("Save report to file? (yes/no): ");
+
+        if (saveToFile) {
+            System.out.print("Enter filename (default: " + defaultFilename + "): ");
+            String filename = scanner.nextLine().trim();
+            if (filename.isEmpty()) {
+                filename = defaultFilename;
+            }
+
+            boolean includeSuppliers = false;
+            if (reportType == ReportType.COMPLETE_INVENTORY) {
+                includeSuppliers = askYesNo("Include supplier details in the report? (yes/no): ");
+            }
+
+            switch (reportType) {
+                case LOW_STOCK -> {
+                    System.out.println("Low stock report saved to: " + filename);
+                    manager.saveLowStockReportToFile(filename);
+                }
+                case EXPIRED_PRODUCTS -> {
+                    System.out.println("Expired products report saved to: " + filename);
+                    manager.saveExpiredProductsReportToFile(filename);
+                }
+                case CATEGORY -> {
+                    System.out.println("Category report saved to: " + filename);
+                    manager.saveCategoryReportToFile(filename, category);
+                }
+                case COMPLETE_INVENTORY -> {
+                    manager.saveReportToFile(filename, includeSuppliers);
+                }
+            }
+
+            System.out.println("Report saved to: " + filename);
+        } else {
+            System.out.println("Report not saved. Displayed on console only.");
+        }
+    }
+
+    private enum ReportType {
+        LOW_STOCK,
+        EXPIRED_PRODUCTS,
+        CATEGORY,
+        COMPLETE_INVENTORY
+    }
+
+    private static boolean askYesNo(String question) {
+        while (true) {
+            System.out.print(question + " ");
+            String response = scanner.nextLine().trim().toLowerCase();
+            if (response.equals("yes") || response.equals("y")) {
+                return true;
+            } else if (response.equals("no") || response.equals("n")) {
+                return false;
+            } else {
+                System.out.println("Please answer 'yes' or 'no'.");
             }
         }
     }

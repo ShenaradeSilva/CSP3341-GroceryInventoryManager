@@ -5,7 +5,12 @@ public class NonPerishable extends Product {
 
     public NonPerishable(int id, String name, double price, int quantity, Category category, Supplier supplier, String shelfLife) {
         super(id, name, price, quantity, category, supplier);
-        this.shelfLife = shelfLife;
+        if (shelfLife == null || shelfLife.trim().isEmpty()) {
+            System.out.println("Error! Shelf life cannot be empty for non-perishable products!");
+            throw new IllegalArgumentException("Shelf life required for non-perishable products");
+        }
+
+        this.shelfLife = shelfLife.trim();
     }
 
     public String getShelfLife() {
@@ -13,7 +18,10 @@ public class NonPerishable extends Product {
     }
 
     public void setShelfLife(String shelfLife) {
-        this.shelfLife = shelfLife;
+        if (shelfLife == null || shelfLife.trim().isEmpty()) {
+            throw new IllegalArgumentException("Shelf life cannot be empty");
+        }
+        this.shelfLife = shelfLife.trim();
     }
 
     public boolean hasShelfLife() {
@@ -27,7 +35,7 @@ public class NonPerishable extends Product {
 
     @Override
     public String toString() {
-        String shelfInfo = hasShelfLife() ? " ! Shelf Life: " + shelfLife: "";
+        String shelfInfo = hasShelfLife() ? " | Shelf Life: " + shelfLife : " | No Shelf Life Info";
         return super.toString() + shelfInfo;
     }
 }
