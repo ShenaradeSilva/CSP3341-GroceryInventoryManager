@@ -1,16 +1,15 @@
 package com.csp3341.grocery;
 
+/**
+ * Represents a non-perishable product with shelf life information.
+ */
 public class NonPerishable extends Product {
     private String shelfLife;
 
-    public NonPerishable(int id, String name, double price, int quantity, Category category, Supplier supplier, String shelfLife) {
+    public NonPerishable(int id, String name, double price, int quantity,
+                         Category category, Supplier supplier, String shelfLife) {
         super(id, name, price, quantity, category, supplier);
-        if (shelfLife == null || shelfLife.trim().isEmpty()) {
-            System.out.println("Error! Shelf life cannot be empty for non-perishable products!");
-            throw new IllegalArgumentException("Shelf life required for non-perishable products");
-        }
-
-        this.shelfLife = shelfLife.trim();
+        setShelfLife(shelfLife);
     }
 
     public String getShelfLife() {
@@ -19,13 +18,9 @@ public class NonPerishable extends Product {
 
     public void setShelfLife(String shelfLife) {
         if (shelfLife == null || shelfLife.trim().isEmpty()) {
-            throw new IllegalArgumentException("Shelf life cannot be empty");
+            throw new IllegalArgumentException("Shelf life cannot be null or empty for non-perishable products");
         }
         this.shelfLife = shelfLife.trim();
-    }
-
-    public boolean hasShelfLife() {
-        return shelfLife != null && !shelfLife.isEmpty();
     }
 
     @Override
@@ -35,7 +30,6 @@ public class NonPerishable extends Product {
 
     @Override
     public String toString() {
-        String shelfInfo = hasShelfLife() ? " | Shelf Life: " + shelfLife : " | No Shelf Life Info";
-        return super.toString() + shelfInfo;
+        return super.toString() + " | Shelf Life: " + shelfLife;
     }
 }

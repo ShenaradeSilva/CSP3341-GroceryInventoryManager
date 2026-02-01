@@ -1,213 +1,216 @@
 package com.csp3341.grocery;
 
+import java.util.Optional;
 import java.util.Scanner;
 
+/**
+ * Console interface for the Grocery Inventory Manager.
+ */
 public class Main {
     private static final Scanner scanner = new Scanner(System.in);
     private static final InventoryManager manager = new InventoryManager();
 
+    private enum ReportType {
+        LOW_STOCK,
+        EXPIRED_PRODUCTS,
+        CATEGORY,
+        COMPLETE_INVENTORY
+    }
+
     public static void main(String[] args) {
+        displayWelcomeMessage();
+
         while (true) {
-            showMainMenu();
-            int choice = readInt("Enter your Choice: ");
+            displayMainMenu();
+            int choice = readInt("Enter your choice: ");
 
             switch (choice) {
                 case 1 -> manageProducts();
                 case 2 -> manageSuppliers();
                 case 3 -> inventoryReports();
-                case 4 -> {
-                    System.out.println("Exiting...." +
-                            "Thank you for using Grocery Inventory Manager!");
-                    return;
-                }
-                default -> System.out.println("Error! Invalid Choice!");
+                case 4 -> exitApplication();
+                default -> System.out.println("Error! Invalid choice. Please try again.");
             }
         }
     }
 
-    private static void showMainMenu() {
-        System.out.println("""
-                    WELCOME TO GROCERY INVENTORY MANAGER!
-                    
-                    MAIN MENU:
-                    1. Manage Product
-                    2. Manage Suppliers
-                    3. Inventory Reports
-                    4. Exit
-                    """);
+    private static void displayWelcomeMessage() {
+        System.out.println("=".repeat(60));
+        System.out.println("WELCOME TO GROCERY INVENTORY MANAGER");
+        System.out.println("=".repeat(60));
     }
 
-    // Manage Products
+    private static void displayMainMenu() {
+        System.out.println("\nMAIN MENU:");
+        System.out.println("1. Manage Products");
+        System.out.println("2. Manage Suppliers");
+        System.out.println("3. Inventory Reports");
+        System.out.println("4. Exit");
+    }
+
+    private static void exitApplication() {
+        System.out.println("\nExiting... Thank you for using Grocery Inventory Manager!");
+        scanner.close();
+        System.exit(0);
+    }
+
+    // Product Management
+
     private static void manageProducts() {
-        boolean running = true;
+        while (true) {
+            System.out.println("\nMANAGE PRODUCTS:");
+            System.out.println("1. View All Products");
+            System.out.println("2. View Expired Products");
+            System.out.println("3. View Low Stock Products");
+            System.out.println("4. View Products by Category");
+            System.out.println("5. Add Product");
+            System.out.println("6. Update Product Stock");
+            System.out.println("7. Remove Product");
+            System.out.println("8. Return to Main Menu");
 
-        while (running) {
-            System.out.println("""
-            \nMANAGE PRODUCTS:
-            1. View All Products
-            2. View Expired Products
-            3. View Low Stock Products
-            4. View Products by Category
-            5. Add Products
-            6. Update Product Stock
-            7. Remove Product
-            8. Return to Main Menu
-            """);
-
-            int choice = readInt("Enter choice:");
+            int choice = readInt("Enter choice: ");
 
             switch (choice) {
                 case 1 -> manager.listAllProducts();
                 case 2 -> manager.listExpiredProducts();
                 case 3 -> manager.listLowStockProducts();
-                case 4 -> filterByCategory();
+                case 4 -> filterProductsByCategory();
                 case 5 -> addProduct();
                 case 6 -> updateProductStock();
                 case 7 -> removeProduct();
                 case 8 -> {
-                    goBack("Main Menu");
-                    running = false;
+                    System.out.println("Returning to Main Menu...");
+                    return;
                 }
-                default -> System.out.println("Error! Invalid Option!");
+                default -> System.out.println("Error! Invalid option.");
             }
         }
     }
 
-    // Add Product
     private static void addProduct() {
-        boolean running = true;
+        System.out.println("\nSELECT PRODUCT TYPE:");
+        System.out.println("1. Perishable Product");
+        System.out.println("2. Non-Perishable Product");
+        System.out.println("3. Return to Previous Menu");
 
-        while (running) {
-            System.out.println("""
-            \nSELECT PRODUCT TYPE:
-            1. Perishable Products
-            2. Non-Perishable Products
-            3. Return to Previous Menu
-            """);
+        int choice = readInt("Enter choice: ");
 
-            int choice = readInt("Enter choice:");
-
-            switch (choice) {
-                case 1 -> addPerishableProduct();
-                case 2 -> addNonPerishableProduct();
-                case 3 -> {
-                    goBack("Product Menu");
-                    running = false;
-                }
-                default -> System.out.println("Error! Invalid Option!");
-            }
+        switch (choice) {
+            case 1 -> addPerishableProduct();
+            case 2 -> addNonPerishableProduct();
+            case 3 -> System.out.println("Returning to Product Menu...");
+            default -> System.out.println("Error! Invalid option.");
         }
     }
 
-
-    // Add Perishable Products
     private static void addPerishableProduct() {
-        System.out.println("\nADD PERISHABLE PRODUCT: ");
-        int nextID = manager.getNextProductId();
-        System.out.println("Product will be assigned to ID: " + nextID);
+        System.out.println("\nADD PERISHABLE PRODUCT:");
+        int nextId = manager.getNextProductId();
+        System.out.println("Product will be assigned ID: " + nextId);
 
         String name = readString("Product Name: ");
         double price = readDouble("Price (LKR): ");
         int quantity = readInt("Quantity: ");
         Category category = readCategory();
 
-        Supplier supplier = selectSupplier();
-        if (supplier == null) {
-            System.out.println("Product Addition Cancelled");
+        Optional<Supplier> supplierOpt = selectSupplier();
+        if (supplierOpt.isEmpty()) {
+            System.out.println("Product addition cancelled.");
             return;
         }
 
         String expiryDate = readString("Expiry Date (YYYY-MM-DD): ");
 
-        manager.addProduct(
-                new Perishable(nextID, name, price, quantity, category, supplier, expiryDate)
-        );
-
-        System.out.println("Perishable Product Added Successfully!");
+        try {
+            Product product = new Perishable(nextId, name, price, quantity,
+                    category, supplierOpt.get(), expiryDate);
+            manager.addProduct(product);
+            System.out.println("Perishable product added successfully!");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 
-    // Add Non-Perishable Products
     private static void addNonPerishableProduct() {
-        System.out.println("\nADD NON-PERISHABLE PRODUCT: ");
+        System.out.println("\nADD NON-PERISHABLE PRODUCT:");
         int nextId = manager.getNextProductId();
-        System.out.println("Product will be assigned to ID: " + nextId);
+        System.out.println("Product will be assigned ID: " + nextId);
 
         String name = readString("Product Name: ");
-        double price = readDouble("Price: LKR ");
+        double price = readDouble("Price (LKR): ");
         int quantity = readInt("Quantity: ");
         Category category = readCategory();
 
-        Supplier supplier = selectSupplier();
-        if (supplier == null) {
-            System.out.println("Product Addition Cancelled");
+        Optional<Supplier> supplierOpt = selectSupplier();
+        if (supplierOpt.isEmpty()) {
+            System.out.println("Product addition cancelled.");
             return;
         }
 
-        String shelfLife = readString("Shelf Life (Years): ");
+        String shelfLife = readString("Shelf Life (e.g., 2 years): ");
 
-        manager.addProduct(
-                new NonPerishable(nextId, name, price, quantity, category, supplier, shelfLife)
-        );
-
-        System.out.println("Non-Perishable Product Added Successfully!");
+        try {
+            Product product = new NonPerishable(nextId, name, price, quantity,
+                    category, supplierOpt.get(), shelfLife);
+            manager.addProduct(product);
+            System.out.println("Non-perishable product added successfully!");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 
-    // Update Product Stock
     private static void updateProductStock() {
-        System.out.println("\nUPDATE PRODUCT STOCK: ");
+        System.out.println("\nUPDATE PRODUCT STOCK:");
         manager.listAllProducts();
 
         if (!manager.hasProducts()) {
-            System.out.println("No Products Available to Update!");
+            System.out.println("No products available to update!");
             return;
         }
 
-        int id = readInt("Enter Product ID to Update: ");
-        Product product = manager.findProduct(id);
+        int productId = readInt("Enter Product ID to update: ");
+        Optional<Product> productOpt = manager.findProduct(productId);
 
-        if (product == null) {
-            System.out.println("Product with ID " + id + " Not Found!");
+        if (productOpt.isEmpty()) {
+            System.out.printf("Product with ID %d not found!%n", productId);
+            return;
         }
-        else  {
-            System.out.println("Current Stock for '" + product.getName() + "' : " + product.getQuantity());
-            int quantity = readInt("Enter New Quantity: ");
-            manager.updateStock(id, quantity);
-            System.out.println("Stock Updated Successfully!");
-        }
+
+        Product product = productOpt.get();
+        System.out.printf("Current stock for '%s': %d%n", product.getName(), product.getQuantity());
+
+        int newQuantity = readInt("Enter new quantity: ");
+        manager.updateStock(productId, newQuantity);
+        System.out.println("Stock updated successfully!");
     }
 
-    // Remove Product
     private static void removeProduct() {
-        System.out.println("\nREMOVE PRODUCT: ");
+        System.out.println("\nREMOVE PRODUCT:");
         manager.listAllProducts();
 
         if (!manager.hasProducts()) {
-            System.out.println("No Products Available to Remove!");
+            System.out.println("No products available to remove!");
             return;
         }
 
-        int id = readInt("Enter the Product ID to be removed: ");
-        manager.removeProduct(id);
+        int productId = readInt("Enter the Product ID to remove: ");
+        manager.removeProduct(productId);
     }
 
-    // Filter Products by Category
-    private static void filterByCategory() {
+    private static void filterProductsByCategory() {
         Category category = readCategory();
         manager.listProductsByCategory(category);
     }
 
-    // Manage Suppliers
-    private static void manageSuppliers() {
-        boolean running = true;
+    // Supplier Management
 
-        while (running) {
-            System.out.println("""
-                        \n\nMANAGE SUPPLIERS:
-                        1. Add Suppliers
-                        2. List Suppliers
-                        3. Remove Supplier
-                        4. Return to Previous Menu
-                    """);
+    private static void manageSuppliers() {
+        while (true) {
+            System.out.println("\nMANAGE SUPPLIERS:");
+            System.out.println("1. Add Supplier");
+            System.out.println("2. List Suppliers");
+            System.out.println("3. Remove Supplier");
+            System.out.println("4. Return to Main Menu");
 
             int choice = readInt("Enter choice: ");
 
@@ -216,105 +219,108 @@ public class Main {
                 case 2 -> manager.listAllSuppliers();
                 case 3 -> removeSupplier();
                 case 4 -> {
-                    goBack("Main Menu");
-                    running = false;
+                    System.out.println("Returning to Main Menu...");
+                    return;
                 }
-                default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+                default -> System.out.println("Error! Invalid option.");
             }
         }
     }
 
-    // Add Suppliers
     private static void addSupplier() {
-        System.out.println("\nADD SUPPLIER: ");
+        System.out.println("\nADD SUPPLIER:");
         System.out.println("Supplier will be assigned ID: " + manager.getNextSupplierId());
 
         String name = readString("Supplier Name: ");
-        String contact = readString("Contact Info: ");
+        String contact = readString("Contact Information: ");
 
         manager.addSupplier(name, contact);
     }
 
-    // Select Suppliers
-    private static Supplier selectSupplier() {
-        System.out.println("\nAVAILABLE SUPPLIERS: ");
+    private static Optional<Supplier> selectSupplier() {
+        System.out.println("\nAVAILABLE SUPPLIERS:");
         manager.listAllSuppliers();
 
         if (!manager.hasSuppliers()) {
-            System.out.println("\nNo Suppliers Available!");
-            System.out.println("\nYou need to Add a Supplier first.");
+            System.out.println("\nNo suppliers available!");
+            System.out.println("You need to add a supplier first.");
 
-            int choice = readInt("\n1. Add new supplier" +
-                    "\n2. Cancel product addition" +
-                    "\nEnter choice: ");
-            if (choice == 1) {
+            System.out.println("\n1. Add new supplier");
+            System.out.println("2. Cancel product addition");
+
+            int initialChoice = readInt("Enter choice: ");
+            if (initialChoice == 1) {
                 addSupplier();
-                return selectSupplier(); // Retry after adding
-            }
-            else {
-                return null;
-            }
-        }
-
-        int supplierId = readInt("\nEnter Supplier ID for this product: ");
-        Supplier supplier = manager.findSupplier(supplierId);
-
-        if (supplier == null) {
-            System.out.println("Supplier not found!");
-            System.out.println("Do you want to:");
-            System.out.println("1. Try another supplier ID");
-            System.out.println("2. Add a new supplier");
-            System.out.println("3. Cancel product addition");
-
-            int choice = readInt("Enter choice: ");
-            switch (choice) {
-                case 1 -> {
-                    return selectSupplier();
-                }
-                case 2 -> {
-                    addSupplier();
-                    return selectSupplier();
-                }
-                case 3 -> {
-                    System.out.println("Product addition cancelled.");
-                    return null;
-                }
-                default -> {
-                    System.out.println("Invalid choice. Cancelling product addition.");
-                    return null;
-                }
+                return selectSupplier();
+            } else {
+                return Optional.empty();
             }
         }
-        return supplier;
+
+        while (true) {
+            int supplierId = readInt("\nEnter Supplier ID for this product (0 to cancel): ");
+
+            if (supplierId == 0) {
+                System.out.println("Product addition cancelled.");
+                return Optional.empty();
+            }
+
+            Optional<Supplier> supplierOpt = manager.findSupplier(supplierId);
+
+            if (supplierOpt.isPresent()) {
+                return supplierOpt;
+            } else {
+                System.out.printf("Supplier with ID %d not found!%n", supplierId);
+
+                System.out.println("\n1. Try another supplier ID");
+                System.out.println("2. Add a new supplier");
+                System.out.println("3. Cancel product addition");
+
+                int choice = readInt("Enter choice: ");
+                switch (choice) {
+                    case 1 -> {
+                        continue;
+                    }
+                    case 2 -> {
+                        addSupplier();
+                        return selectSupplier();
+                    }
+                    case 3 -> {
+                        System.out.println("Product addition cancelled.");
+                        return Optional.empty();
+                    }
+                    default -> {
+                        System.out.println("Invalid choice. Cancelling product addition.");
+                        return Optional.empty();
+                    }
+                }
+            }
+        }
     }
 
-    // Remove Suppliers
-    private  static void removeSupplier() {
-        System.out.println("\nREMOVE SUPPLIER: ");
+    private static void removeSupplier() {
+        System.out.println("\nREMOVE SUPPLIER:");
         manager.listAllSuppliers();
 
         if (!manager.hasSuppliers()) {
-            System.out.println("No Suppliers Available to Remove!");
+            System.out.println("No suppliers available to remove!");
             return;
         }
 
-        int id = readInt("\nEnter the Supplier ID to be Removed: ");
-        manager.removeSupplier(id);
+        int supplierId = readInt("Enter the Supplier ID to remove: ");
+        manager.removeSupplier(supplierId);
     }
 
     // Inventory Reports
-    private static void inventoryReports() {
-        boolean running = true;
 
-        while (running) {
-            System.out.println("""
-                        \n\nINVENTORY REPORTS:
-                        1. Generate Low Stock Reports
-                        2. Generate Expired Products Reports
-                        3. Generate Category Reports
-                        4. Generate Complete Inventory Reports
-                        5. Return to Previous Menu
-                    """);
+    private static void inventoryReports() {
+        while (true) {
+            System.out.println("\nINVENTORY REPORTS:");
+            System.out.println("1. Low Stock Report");
+            System.out.println("2. Expired Products Report");
+            System.out.println("3. Category Report");
+            System.out.println("4. Complete Inventory Report");
+            System.out.println("5. Return to Main Menu");
 
             int choice = readInt("Enter choice: ");
 
@@ -324,10 +330,10 @@ public class Main {
                 case 3 -> generateCategoryReport();
                 case 4 -> generateCompleteInventoryReport();
                 case 5 -> {
-                    goBack("Main Menu");
-                    running = false;
+                    System.out.println("Returning to Main Menu...");
+                    return;
                 }
-                default -> System.out.println("Error! Invalid Type! Please Enter a Valid Option");
+                default -> System.out.println("Error! Invalid option.");
             }
         }
     }
@@ -339,7 +345,7 @@ public class Main {
         manager.listLowStockProducts();
         System.out.println("=".repeat(60));
 
-        askToSaveReport("low_stock_report.txt", ReportType.LOW_STOCK);
+        askToSaveReport("low_stock_report.txt", ReportType.LOW_STOCK, null);
     }
 
     private static void generateExpiredProductsReport() {
@@ -349,13 +355,13 @@ public class Main {
         manager.listExpiredProducts();
         System.out.println("=".repeat(60));
 
-        askToSaveReport("expired_products_report.txt", ReportType.EXPIRED_PRODUCTS);
+        askToSaveReport("expired_products_report.txt", ReportType.EXPIRED_PRODUCTS, null);
     }
 
     private static void generateCategoryReport() {
         Category category = readCategory();
         System.out.println("\n" + "=".repeat(60));
-        System.out.println("CATEGORY REPORT: " + category);
+        System.out.printf("CATEGORY REPORT: %s%n", category);
         System.out.println("=".repeat(60));
         manager.listProductsByCategory(category);
         System.out.println("=".repeat(60));
@@ -385,123 +391,97 @@ public class Main {
         System.out.println("REPORT COMPLETE");
         System.out.println("=".repeat(60));
 
-        askToSaveReport("complete_inventory_report.txt", ReportType.COMPLETE_INVENTORY);
-    }
-
-    private static void askToSaveReport(String defaultFilename, ReportType reportType) {
-        askToSaveReport(defaultFilename, reportType, null);
+        askToSaveReport("complete_inventory_report.txt", ReportType.COMPLETE_INVENTORY, null);
     }
 
     private static void askToSaveReport(String defaultFilename, ReportType reportType, Category category) {
         System.out.println("\nWould you like to save this report to a file?");
         boolean saveToFile = askYesNo("Save report to file? (yes/no): ");
 
-        if (saveToFile) {
-            System.out.print("Enter filename (default: " + defaultFilename + "): ");
-            String filename = scanner.nextLine().trim();
-            if (filename.isEmpty()) {
-                filename = defaultFilename;
-            }
-
-            boolean includeSuppliers = false;
-            if (reportType == ReportType.COMPLETE_INVENTORY) {
-                includeSuppliers = askYesNo("Include supplier details in the report? (yes/no): ");
-            }
-
-            switch (reportType) {
-                case LOW_STOCK -> {
-                    System.out.println("Low stock report saved to: " + filename);
-                    manager.saveLowStockReportToFile(filename);
-                }
-                case EXPIRED_PRODUCTS -> {
-                    System.out.println("Expired products report saved to: " + filename);
-                    manager.saveExpiredProductsReportToFile(filename);
-                }
-                case CATEGORY -> {
-                    System.out.println("Category report saved to: " + filename);
-                    manager.saveCategoryReportToFile(filename, category);
-                }
-                case COMPLETE_INVENTORY -> {
-                    manager.saveReportToFile(filename, includeSuppliers);
-                }
-            }
-
-            System.out.println("Report saved to: " + filename);
-        } else {
+        if (!saveToFile) {
             System.out.println("Report not saved. Displayed on console only.");
+            return;
         }
+
+        System.out.print("Enter filename (default: " + defaultFilename + "): ");
+        String filename = scanner.nextLine().trim();
+        if (filename.isEmpty()) {
+            filename = defaultFilename;
+        }
+
+        switch (reportType) {
+            case LOW_STOCK -> manager.saveLowStockReportToFile(filename);
+            case EXPIRED_PRODUCTS -> manager.saveExpiredProductsReportToFile(filename);
+            case CATEGORY -> manager.saveCategoryReportToFile(filename, category);
+            case COMPLETE_INVENTORY -> {
+                boolean includeSuppliers = askYesNo("Include supplier details in the report? (yes/no): ");
+                manager.saveCompleteReportToFile(filename, includeSuppliers);
+            }
+        }
+
+        System.out.println("Report saved to: " + filename);
     }
 
-    private enum ReportType {
-        LOW_STOCK,
-        EXPIRED_PRODUCTS,
-        CATEGORY,
-        COMPLETE_INVENTORY
-    }
+    // Helper Methods
 
     private static boolean askYesNo(String question) {
         while (true) {
-            System.out.print(question + " ");
+            System.out.print(question);
             String response = scanner.nextLine().trim().toLowerCase();
-            if (response.equals("yes") || response.equals("y")) {
-                return true;
-            } else if (response.equals("no") || response.equals("n")) {
-                return false;
-            } else {
-                System.out.println("Please answer 'yes' or 'no'.");
+
+            switch (response) {
+                case "yes", "y" -> {
+                    return true;
+                }
+                case "no", "n" -> {
+                    return false;
+                }
+                default -> System.out.println("Please answer 'yes' or 'no'.");
             }
         }
     }
 
-    // Input Helpers
-    private static int readInt(String msg) {
+    private static int readInt(String prompt) {
         while (true) {
             try {
-                System.out.print(msg + " ");
-                int value = Integer.parseInt(scanner.nextLine().trim());
-                return value;
+                System.out.print(prompt);
+                return Integer.parseInt(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
                 System.out.println("Invalid input. Please enter a valid integer.");
             }
         }
     }
 
-    private static double readDouble(String msg) {
+    private static double readDouble(String prompt) {
         while (true) {
             try {
-                System.out.print(msg + " ");
-                double value = Double.parseDouble(scanner.nextLine().trim());
-                return value;
+                System.out.print(prompt);
+                return Double.parseDouble(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
                 System.out.println("Invalid input. Please enter a valid number.");
             }
         }
     }
 
-    private static String readString(String msg) {
-        System.out.print(msg + " ");
-        return scanner.nextLine();
+    private static String readString(String prompt) {
+        System.out.print(prompt);
+        return scanner.nextLine().trim();
     }
 
     private static Category readCategory() {
         Category[] categories = Category.values();
-        System.out.println("Available Categories: ");
+
+        System.out.println("\nAvailable Categories:");
         for (int i = 0; i < categories.length; i++) {
-            System.out.println((i + 1) + ". " + categories[i]);
+            System.out.printf("%d. %s%n", i + 1, categories[i]);
         }
 
         while (true) {
-            int choice = readInt("Select Category (1-" + categories.length + "): ");
+            int choice = readInt(String.format("Select Category (1-%d): ", categories.length));
             if (choice >= 1 && choice <= categories.length) {
                 return categories[choice - 1];
-            } else {
-                System.out.println("Invalid choice. Please select a number between 1 and " + categories.length + ".");
             }
+            System.out.printf("Invalid choice. Please enter a number between 1 and %d.%n", categories.length);
         }
-    }
-
-    // Exit Helper
-    private static void goBack(String menuName) {
-        System.out.println("Returning to " + menuName + "...\n\n");
     }
 }

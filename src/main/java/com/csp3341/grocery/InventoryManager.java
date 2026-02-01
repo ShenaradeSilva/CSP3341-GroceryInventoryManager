@@ -1,193 +1,454 @@
 package com.csp3341.grocery;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.io.PrintWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
+/**
+ * Manages inventory operations including products and suppliers.
+ * Provides comprehensive reporting capabilities.
+ */
 public class InventoryManager {
+    private static final DateTimeFormatter REPORT_TIMESTAMP_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int REPORT_SEPARATOR_LENGTH = 60;
+
     private final List<Product> products;
     private final List<Supplier> suppliers;
     private int nextProductId;
     private int nextSupplierId;
 
     public InventoryManager() {
-        products = new ArrayList<>();
-        suppliers = new ArrayList<>();
-        nextProductId = 1;
-        nextSupplierId = 1;
+        this.products = new ArrayList<>();
+        this.suppliers = new ArrayList<>();
+        this.nextProductId = 1;
+        this.nextSupplierId = 1;
     }
 
     // Supplier Management
+
+    /**
+     * Adds a new supplier with auto-generated ID.
+     *
+     * @param supplierName the name of the supplier
+     * @param contact the contact information
+     */
     public void addSupplier(String supplierName, String contact) {
         Supplier supplier = new Supplier(nextSupplierId, supplierName, contact);
         suppliers.add(supplier);
+        System.out.printf("Supplier '%s' added with ID: %d%n", supplierName, supplier.getSupplierId());
         nextSupplierId++;
-        System.out.println("Supplier '" + supplierName + "' added with ID: " + supplier.getSupplierId());
     }
 
+    /**
+     * Adds an existing supplier to the inventory.
+     *
+     * @param supplier the supplier to add
+     * @throws IllegalArgumentException if supplier is null
+     */
     public void addSupplier(Supplier supplier) {
+        if (supplier == null) {
+            throw new IllegalArgumentException("Supplier cannot be null");
+        }
         suppliers.add(supplier);
-        if (supplier.getSupplierId() >= nextSupplierId) {
-            nextSupplierId = supplier.getSupplierId() + 1;
-        }
+        nextSupplierId = Math.max(nextSupplierId, supplier.getSupplierId() + 1);
     }
 
-    public Supplier findSupplier(int supplierId) {
-        return suppliers.stream().filter(s -> s.getSupplierId() == supplierId)
-                .findFirst().orElse(null);
+    /**
+     * Finds a supplier by ID.
+     *
+     * @param supplierId the ID of the supplier to find
+     * @return Optional containing the supplier if found, empty otherwise
+     */
+    public Optional<Supplier> findSupplier(int supplierId) {
+        return suppliers.stream()
+                .filter(s -> s.getSupplierId() == supplierId)
+                .findFirst();
     }
 
-    public void removeSupplier(int supplierId)
-    {
-        Supplier supplier = findSupplier(supplierId);
-        if (supplier != null) {
-            boolean hasProducts = products.stream().anyMatch(p -> p.getSupplier().getSupplierId() == supplierId);
-            if (hasProducts) {
-                System.out.println("Cannot Remove Supplier '" + supplier.getSupplierName() + "'! There are products associated with this Supplier.");
-                return;
-            }
+    /**
+     * Removes a supplier if no products are associated with it.
+     *
+     * @param supplierId the ID of the supplier to remove
+     */
+    public void removeSupplier(int supplierId) {
+        Optional<Supplier> supplierOpt = findSupplier(supplierId);
 
-            suppliers.removeIf(s -> s.getSupplierId() == supplierId);
-            System.out.println("Supplier '" + supplier.getSupplierName() + "'with ID: " + supplierId + " Removed Successfully!");
+        if (supplierOpt.isEmpty()) {
+            System.out.printf("Supplier with ID %d not found!%n", supplierId);
+            return;
+        }
 
-            reassignSupplierIds();
+        Supplier supplier = supplierOpt.get();
+
+        if (hasProductsForSupplier(supplierId)) {
+            System.out.printf("Cannot remove supplier '%s'! There are products associated with this supplier.%n",
+                    supplier.getSupplierName());
+            return;
         }
-        else {
-            System.out.println("Supplier with ID " + supplierId + " Not Found!");
-        }
+
+        suppliers.removeIf(s -> s.getSupplierId() == supplierId);
+        System.out.printf("Supplier '%s' with ID: %d removed successfully!%n",
+                supplier.getSupplierName(), supplierId);
     }
 
-    private void reassignSupplierIds() {
-        suppliers.sort((s1, s2) -> Integer.compare(s1.getSupplierId(), s2.getSupplierId()));
-        nextSupplierId = 1;
-
-        for (int i = 0; i < suppliers.size(); i++) {
-            Supplier supplier = suppliers.get(i);
-            Supplier newSupplier = new Supplier(
-                    nextSupplierId,
-                    supplier.getSupplierName(),
-                    supplier.getContact()
-            );
-            suppliers.set(i, newSupplier);
-
-            for (Product product : products) {
-                if (product.getSupplier().equals(supplier)) {
-                    updateProductSupplier(product, newSupplier);
-                }
-            }
-
-            nextSupplierId++;
-        }
-    }
-
-    private void updateProductSupplier(Product oldProduct, Supplier newSupplier) {
-        int index = products.indexOf(oldProduct);
-        if (index != -1) {
-            Product product = products.get(index);
-
-            if (product instanceof Perishable) {
-                Perishable perishable = (Perishable) product;
-                Product newProduct = new Perishable(
-                        product.getId(),
-                        product.getName(),
-                        product.getPrice(),
-                        product.getQuantity(),
-                        product.getCategory(),
-                        newSupplier,
-                        perishable.getExpiryDate().toString()
-                );
-                products.set(index, newProduct);
-            }
-            else if (product instanceof NonPerishable) {
-                NonPerishable nonPerishable = (NonPerishable) product;
-                Product newProduct = new NonPerishable(
-                        product.getId(),
-                        product.getName(),
-                        product.getPrice(),
-                        product.getQuantity(),
-                        product.getCategory(),
-                        newSupplier,
-                        nonPerishable.getShelfLife()
-                );
-                products.set(index, newProduct);
-            }
-        }
+    private boolean hasProductsForSupplier(int supplierId) {
+        return products.stream()
+                .anyMatch(p -> p.getSupplier().getSupplierId() == supplierId);
     }
 
     // Product Management
+
+    /**
+     * Adds a product to the inventory.
+     *
+     * @param product the product to add
+     * @throws IllegalArgumentException if product is null
+     */
     public void addProduct(Product product) {
+        if (product == null) {
+            throw new IllegalArgumentException("Product cannot be null");
+        }
         products.add(product);
-        System.out.println("Product '" + product.getName() + "' added with ID: " + product.getId());
-
-        if (product.getId() >= nextProductId) {
-            nextProductId = product.getId() + 1;
-        }
+        System.out.printf("Product '%s' added with ID: %d%n", product.getName(), product.getId());
+        nextProductId = Math.max(nextProductId, product.getId() + 1);
     }
 
+    /**
+     * Removes a product from the inventory.
+     *
+     * @param productId the ID of the product to remove
+     */
     public void removeProduct(int productId) {
-        Product product = findProduct(productId);
-        if (product != null) {
-            products.removeIf(p -> p.getId() == productId);
-            System.out.println("Product '" + product.getName() + "' with ID: " + productId + " Removed Successfully!");
-            reassignProductIds();
+        Optional<Product> productOpt = findProduct(productId);
+
+        if (productOpt.isEmpty()) {
+            System.out.printf("Product with ID %d not found!%n", productId);
+            return;
         }
-        else {
-            System.out.println("Product with ID " + productId + " not found!");
-        }
+
+        Product product = productOpt.get();
+        products.removeIf(p -> p.getId() == productId);
+        System.out.printf("Product '%s' with ID: %d removed successfully!%n",
+                product.getName(), productId);
     }
 
-    private void reassignProductIds(){
-        products.sort((p1, p2) -> Integer.compare(p1.getId(), p2.getId()));
-        nextProductId = 1;
-
-        for (int i = 0; i < products.size(); i++) {
-            Product product = products.get(i);
-
-            if (product instanceof Perishable) {
-                Perishable perishable = (Perishable) product;
-                Product newProduct = new Perishable(
-                        nextProductId,
-                        product.getName(),
-                        product.getPrice(),
-                        product.getQuantity(),
-                        product.getCategory(),
-                        product.getSupplier(),
-                        perishable.getExpiryDate().toString()
-                );
-                products.set(i, newProduct);
-            }
-            else if (product instanceof NonPerishable) {
-                NonPerishable nonPerishable = (NonPerishable) product;
-                Product newProduct = new NonPerishable(
-                        nextProductId,
-                        product.getName(),
-                        product.getPrice(),
-                        product.getQuantity(),
-                        product.getCategory(),
-                        product.getSupplier(),
-                        nonPerishable.getShelfLife()
-                );
-                products.set(i, newProduct);
-            }
-            nextProductId++;
-        }
+    /**
+     * Finds a product by ID.
+     *
+     * @param productId the ID of the product to find
+     * @return Optional containing the product if found, empty otherwise
+     */
+    public Optional<Product> findProduct(int productId) {
+        return products.stream()
+                .filter(p -> p.getId() == productId)
+                .findFirst();
     }
 
-    public Product findProduct(int productId) {
-        return products.stream().filter(p -> p.getId() == productId)
-                .findFirst().orElse(null);
-    }
-
+    /**
+     * Updates the stock quantity of a product.
+     *
+     * @param productId the ID of the product to update
+     * @param quantity the new quantity
+     */
     public void updateStock(int productId, int quantity) {
-        Product p = findProduct(productId);
-        if (p != null) {
-            p.setQuantity(quantity);
+        Optional<Product> productOpt = findProduct(productId);
+        productOpt.ifPresentOrElse(
+                product -> product.setQuantity(quantity),
+                () -> System.out.printf("Product with ID %d not found!%n", productId)
+        );
+    }
+
+    // Console Reporting Methods
+
+    public void listAllProducts() {
+        System.out.println("PRODUCT LIST:");
+        printProductsOrMessage(products, "No products found!");
+    }
+
+    public void listExpiredProducts() {
+        System.out.println("EXPIRED PRODUCT LIST:");
+        List<Product> expiredProducts = products.stream()
+                .filter(Product::isExpired)
+                .toList();
+        printProductsOrMessage(expiredProducts, "No expired products found!");
+    }
+
+    public void listLowStockProducts() {
+        System.out.println("LOW STOCK PRODUCT LIST:");
+        List<Product> lowStockProducts = products.stream()
+                .filter(Product::isLowStock)
+                .toList();
+        printProductsOrMessage(lowStockProducts, "No low stock products found!");
+    }
+
+    public void listProductsByCategory(Category category) {
+        if (category == null) {
+            throw new IllegalArgumentException("Category cannot be null");
+        }
+
+        System.out.printf("PRODUCTS IN CATEGORY: %s%n", category);
+        List<Product> categoryProducts = products.stream()
+                .filter(p -> p.getCategory() == category)
+                .toList();
+        printProductsOrMessage(categoryProducts, "No products found in this category!");
+    }
+
+    public void listAllSuppliers() {
+        System.out.println("SUPPLIER LIST:");
+        if (suppliers.isEmpty()) {
+            System.out.println("No suppliers found!");
+        } else {
+            suppliers.forEach(System.out::println);
         }
     }
+
+    /**
+     * Generates a complete inventory report to console.
+     * Includes supplier details if requested.
+     *
+     * @param includeSupplierDetails whether to include supplier details in the report
+     */
+    public void generateCompleteReport(boolean includeSupplierDetails) {
+        String separator = createSeparator('=', REPORT_SEPARATOR_LENGTH);
+
+        System.out.println("\n" + separator);
+        System.out.println("COMPLETE INVENTORY REPORT");
+        System.out.println(separator);
+
+        if (includeSupplierDetails) {
+            System.out.println("\nSUPPLIER DETAILS:");
+            System.out.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+            listAllSuppliers();
+        }
+
+        System.out.println("\nPRODUCT SUMMARY:");
+        System.out.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+        System.out.println("Total Products: " + getProductCount());
+        System.out.println("Total Suppliers: " + getSupplierCount());
+
+        System.out.println("\nALL PRODUCTS:");
+        System.out.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+        listAllProducts();
+
+        System.out.println("\nEXPIRED PRODUCTS:");
+        System.out.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+        listExpiredProducts();
+
+        System.out.println("\nLOW STOCK PRODUCTS:");
+        System.out.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+        listLowStockProducts();
+
+        System.out.println("\n" + separator);
+        System.out.println("REPORT COMPLETE");
+        System.out.println(separator);
+    }
+
+    // File Reporting Methods
+
+    public void saveLowStockReportToFile(String filename) {
+        List<Product> lowStockProducts = products.stream()
+                .filter(Product::isLowStock)
+                .toList();
+
+        saveProductReportToFile(filename, "LOW STOCK PRODUCTS REPORT",
+                "LOW STOCK PRODUCTS", lowStockProducts);
+    }
+
+    public void saveExpiredProductsReportToFile(String filename) {
+        List<Product> expiredProducts = products.stream()
+                .filter(Product::isExpired)
+                .toList();
+
+        saveProductReportToFile(filename, "EXPIRED PRODUCTS REPORT",
+                "EXPIRED PRODUCTS", expiredProducts);
+    }
+
+    public void saveCategoryReportToFile(String filename, Category category) {
+        if (category == null) {
+            throw new IllegalArgumentException("Category cannot be null");
+        }
+
+        List<Product> categoryProducts = products.stream()
+                .filter(p -> p.getCategory() == category)
+                .toList();
+
+        saveProductReportToFile(filename,
+                String.format("CATEGORY REPORT: %s", category),
+                String.format("PRODUCTS IN CATEGORY: %s", category),
+                categoryProducts);
+    }
+
+    /**
+     * Saves a complete inventory report to a file.
+     * Includes supplier details if requested.
+     *
+     * @param filename the name of the file to save to
+     * @param includeSupplierDetails whether to include supplier details
+     */
+    public void saveCompleteReportToFile(String filename, boolean includeSupplierDetails) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+            String timestamp = LocalDateTime.now().format(REPORT_TIMESTAMP_FORMATTER);
+
+            // Report Header
+            writer.println(createSeparator('=', REPORT_SEPARATOR_LENGTH));
+            writer.println("COMPLETE INVENTORY REPORT");
+            writer.println("Generated: " + timestamp);
+            writer.println(createSeparator('=', REPORT_SEPARATOR_LENGTH));
+            writer.println();
+
+            // Supplier Section (if requested)
+            if (includeSupplierDetails) {
+                writer.println("SUPPLIER DETAILS:");
+                writer.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+                if (suppliers.isEmpty()) {
+                    writer.println("No suppliers found!");
+                } else {
+                    for (Supplier supplier : suppliers) {
+                        writer.println(supplier.toString());
+                    }
+                }
+                writer.println();
+            }
+
+            // Product Summary
+            writer.println("PRODUCT SUMMARY:");
+            writer.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+            writer.println("Total Products: " + getProductCount());
+            writer.println("Total Suppliers: " + getSupplierCount());
+            writer.println("Expired Products: " + countExpiredProducts());
+            writer.println("Low Stock Products: " + countLowStockProducts());
+            writer.println();
+
+            // All Products Section
+            writer.println("ALL PRODUCTS:");
+            writer.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+            if (products.isEmpty()) {
+                writer.println("No products found!");
+            } else {
+                for (Product product : products) {
+                    writer.println(product.toString());
+                }
+            }
+            writer.println();
+
+            // Expired Products Section
+            writer.println("EXPIRED PRODUCTS:");
+            writer.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+            List<Product> expiredProducts = products.stream()
+                    .filter(Product::isExpired)
+                    .toList();
+            if (expiredProducts.isEmpty()) {
+                writer.println("No expired products found!");
+            } else {
+                for (Product product : expiredProducts) {
+                    writer.println(product.toString());
+                }
+            }
+            writer.println();
+
+            // Low Stock Products Section
+            writer.println("LOW STOCK PRODUCTS:");
+            writer.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+            List<Product> lowStockProducts = products.stream()
+                    .filter(Product::isLowStock)
+                    .toList();
+            if (lowStockProducts.isEmpty()) {
+                writer.println("No low stock products found!");
+            } else {
+                for (Product product : lowStockProducts) {
+                    writer.println(product.toString());
+                }
+            }
+
+            // Report Footer
+            writer.println("\n" + createSeparator('=', REPORT_SEPARATOR_LENGTH));
+            writer.println("REPORT END");
+            writer.println("Generated by Grocery Inventory Manager");
+            writer.println(createSeparator('=', REPORT_SEPARATOR_LENGTH));
+
+            System.out.printf("Complete inventory report saved to: %s%n", filename);
+        } catch (IOException e) {
+            System.out.printf("Error saving report to file '%s': %s%n", filename, e.getMessage());
+        }
+    }
+
+    /**
+     * Saves a general inventory report to a file.
+     * This is a simplified version for compatibility with the original interface.
+     *
+     * @param filename the name of the file to save to
+     * @param includeSupplierDetails whether to include supplier details
+     */
+    public void saveReportToFile(String filename, boolean includeSupplierDetails) {
+        saveCompleteReportToFile(filename, includeSupplierDetails);
+    }
+
+    private void saveProductReportToFile(String filename, String reportTitle,
+                                         String sectionTitle, List<Product> products) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
+            String timestamp = LocalDateTime.now().format(REPORT_TIMESTAMP_FORMATTER);
+
+            writer.println(createSeparator('=', REPORT_SEPARATOR_LENGTH));
+            writer.println(reportTitle);
+            writer.println("Generated: " + timestamp);
+            writer.println(createSeparator('=', REPORT_SEPARATOR_LENGTH));
+            writer.println();
+
+            writer.println(sectionTitle + " (" + products.size() + "):");
+            writer.println(createSeparator('-', REPORT_SEPARATOR_LENGTH));
+
+            if (products.isEmpty()) {
+                writer.println("No products found!");
+            } else {
+                for (Product product : products) {
+                    writer.println(product.toString());
+                }
+            }
+
+            writer.println("\n" + createSeparator('=', REPORT_SEPARATOR_LENGTH));
+            writer.println("REPORT END");
+            writer.println("Generated by Grocery Inventory Manager");
+            writer.println(createSeparator('=', REPORT_SEPARATOR_LENGTH));
+
+            System.out.printf("Report saved to: %s%n", filename);
+        } catch (IOException e) {
+            System.out.printf("Error saving to file '%s': %s%n", filename, e.getMessage());
+        }
+    }
+
+    // Helper Methods
+
+    private void printProductsOrMessage(List<Product> products, String emptyMessage) {
+        if (products.isEmpty()) {
+            System.out.println(emptyMessage);
+        } else {
+            products.forEach(System.out::println);
+        }
+    }
+
+    private String createSeparator(char character, int length) {
+        return String.valueOf(character).repeat(length);
+    }
+
+    private long countExpiredProducts() {
+        return products.stream()
+                .filter(Product::isExpired)
+                .count();
+    }
+
+    private long countLowStockProducts() {
+        return products.stream()
+                .filter(Product::isLowStock)
+                .count();
+    }
+
+    // Getters
 
     public int getNextProductId() {
         return nextProductId;
@@ -213,258 +474,21 @@ public class InventoryManager {
         return suppliers.size();
     }
 
-    // Listing and Reporting
-    public void listAllProducts() {
-        System.out.println("PRODUCT LIST: ");
-        if (products.isEmpty()) {
-            System.out.println("No Products Found!");
-        }
-        else {
-            products.forEach(System.out::println);
-        }
+    /**
+     * Gets all products in the inventory.
+     *
+     * @return an unmodifiable list of all products
+     */
+    public List<Product> getAllProducts() {
+        return List.copyOf(products);
     }
 
-    public void listExpiredProducts() {
-        System.out.println("EXPIRED PRODUCT LIST: ");
-        List<Product> expiredProduct = products.stream().filter(Product::isExpired).toList();
-
-        if (expiredProduct.isEmpty()) {
-            System.out.println("No Expired Products Found!");
-        }
-        else {
-            expiredProduct.forEach(System.out::println);
-        }
-    }
-
-    public void listLowStockProducts() {
-        System.out.println("LOW STOCK PRODUCT LIST:");
-        List<Product> lowStockProducts = products.stream().filter(Product::isLowStock).toList();
-
-        if (lowStockProducts.isEmpty()) {
-            System.out.println("No Low Stock Products Found!");
-        }
-        else {
-            lowStockProducts.forEach(System.out::println);
-        }
-    }
-
-    public void listProductsByCategory(Category category) {
-        System.out.println("PRODUCTS IN CATEGORY:" + category);
-        List<Product> categoryProducts = products.stream().filter(p -> p.getCategory() == category)
-                .toList();
-
-        if (categoryProducts.isEmpty()) {
-            System.out.println("No Products Found in Category!");
-        }
-        else {
-            categoryProducts.forEach(System.out::println);
-        }
-    }
-
-    public void listAllSuppliers() {
-        System.out.println("SUPPLIER LIST: ");
-        if (suppliers.isEmpty()) {
-            System.out.println("No Suppliers Found!");
-        }
-        else {
-            suppliers.forEach(System.out::println);
-        }
-    }
-
-    public void generateCompleteReport() {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("COMPLETE INVENTORY REPORT");
-        System.out.println("=".repeat(80));
-
-        System.out.println("\nALL PRODUCTS:");
-        System.out.println("-".repeat(80));
-        listAllProducts();
-
-        System.out.println("\nEXPIRED PRODUCTS:");
-        System.out.println("-".repeat(80));
-        listExpiredProducts();
-
-        System.out.println("\nLOW STOCK PRODUCTS:");
-        System.out.println("-".repeat(80));
-        listLowStockProducts();
-
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("REPORT COMPLETE");
-        System.out.println("=".repeat(80));
-    }
-
-    public void saveLowStockReportToFile(String filename) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-            String separator = createSeparator('=', 60);
-            String subSeparator = createSeparator('-', 60);
-
-            writer.println(separator);
-            writer.println("LOW STOCK PRODUCTS REPORT");
-            writer.println("Generated: " +
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            writer.println(separator);
-            writer.println();
-
-            List<Product> lowStockProducts = products.stream()
-                    .filter(Product::isLowStock)
-                    .toList();
-
-            writer.println("LOW STOCK PRODUCTS (" + lowStockProducts.size() + "):");
-            writer.println(subSeparator);
-
-            if (lowStockProducts.isEmpty()) {
-                writer.println("No Low Stock Products Found!");
-            } else {
-                for (Product p : lowStockProducts) {
-                    writer.println(p.toString());
-                }
-            }
-
-            System.out.println("Low stock report saved to: " + filename);
-        } catch (IOException e) {
-            System.out.println("Error saving to file: " + e.getMessage());
-        }
-    }
-
-    public void saveExpiredProductsReportToFile(String filename) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-            String separator = createSeparator('=', 60);
-            String subSeparator = createSeparator('-', 60);
-
-            writer.println(separator);
-            writer.println("EXPIRED PRODUCTS REPORT");
-            writer.println("Generated: " +
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            writer.println(separator);
-            writer.println();
-
-            List<Product> expiredProducts = products.stream()
-                    .filter(Product::isExpired)
-                    .toList();
-
-            writer.println("EXPIRED PRODUCTS (" + expiredProducts.size() + "):");
-            writer.println(subSeparator);
-
-            if (expiredProducts.isEmpty()) {
-                writer.println("No Expired Products Found!");
-            } else {
-                for (Product p : expiredProducts) {
-                    writer.println(p.toString());
-                }
-            }
-
-            System.out.println("Expired products report saved to: " + filename);
-        } catch (IOException e) {
-            System.out.println("Error saving to file: " + e.getMessage());
-        }
-    }
-
-    public void saveCategoryReportToFile(String filename, Category category) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-            String separator = createSeparator('=', 60);
-            String subSeparator = createSeparator('-', 60);
-
-            writer.println(separator);
-            writer.println("CATEGORY REPORT: " + category);
-            writer.println("Generated: " +
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            writer.println(separator);
-            writer.println();
-
-            List<Product> categoryProducts = products.stream()
-                    .filter(p -> p.getCategory() == category)
-                    .toList();
-
-            writer.println("PRODUCTS IN CATEGORY: " + category + " (" + categoryProducts.size() + ")");
-            writer.println(subSeparator);
-
-            if (categoryProducts.isEmpty()) {
-                writer.println("No Products Found in Category!");
-            } else {
-                for (Product p : categoryProducts) {
-                    writer.println(p.toString());
-                }
-            }
-
-            System.out.println("Category report saved to: " + filename);
-        } catch (IOException e) {
-            System.out.println("Error saving to file: " + e.getMessage());
-        }
-    }
-
-    public void saveReportToFile(String filename, boolean includeSupplierDetails) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-            String separator = createSeparator('=', 60);
-            String subSeparator = createSeparator('-', 60);
-
-            writer.println(separator);
-            writer.println("INVENTORY REPORT");
-            writer.println("Generated: " +
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            writer.println(separator);
-            writer.println();
-
-            if (includeSupplierDetails) {
-                writer.println("SUPPLIER DETAILS:");
-                writer.println(subSeparator);
-                if (suppliers.isEmpty()) {
-                    writer.println("No Suppliers Found!");
-                } else {
-                    for (Supplier s : suppliers) {
-                        writer.println(s.toString());
-                    }
-                }
-                writer.println();
-            }
-
-            writer.println("PRODUCT LIST:");
-            writer.println(subSeparator);
-            if (products.isEmpty()) {
-                writer.println("No Products Found!");
-            } else {
-                for (Product p : products) {
-                    writer.println(p.toString());
-                }
-            }
-
-            writer.println("\n" + separator);
-            writer.println("REPORT END");
-            writer.println("Total Products: " + getProductCount());
-            writer.println("Total Suppliers: " + getSupplierCount());
-
-            System.out.println("Report saved to file: " + filename);
-        } catch (IOException e) {
-            System.out.println("Error saving to file: " + e.getMessage());
-        }
-    }
-
-    private String createSeparator(char c, int length) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            sb.append(c);
-        }
-        return sb.toString();
-    }
-
-    public void saveConsoleReport(boolean includeSupplierDetails) {
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("CONSOLE INVENTORY REPORT");
-        System.out.println("=".repeat(80));
-
-        if (includeSupplierDetails) {
-            System.out.println("\nSUPPLIER DETAILS:");
-            System.out.println("-".repeat(80));
-            listAllSuppliers();
-        }
-
-        System.out.println("\nPRODUCT LIST:");
-        System.out.println("-".repeat(80));
-        listAllProducts();
-
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("REPORT END");
-        System.out.println("Total Products: " + getProductCount());
-        System.out.println("Total Suppliers: " + getSupplierCount());
-        System.out.println("=".repeat(80));
+    /**
+     * Gets all suppliers in the inventory.
+     *
+     * @return an unmodifiable list of all suppliers
+     */
+    public List<Supplier> getAllSuppliers() {
+        return List.copyOf(suppliers);
     }
 }
